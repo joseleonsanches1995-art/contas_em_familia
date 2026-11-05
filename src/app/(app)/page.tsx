@@ -3,7 +3,7 @@ import { logout } from "@/actions/auth";
 import { EntryList } from "@/components/entry-list";
 import { ReceivedInvites } from "@/components/received-invites";
 import { MonthSwitcher } from "@/components/month-switcher";
-import { formatMonthLabel, parseMonthKey } from "@/lib/dates";
+import { parseMonthKey } from "@/lib/dates";
 import { formatBRL } from "@/lib/money";
 import { requireMembership } from "@/lib/session";
 import {
@@ -44,12 +44,8 @@ export default async function HomePage({
 
       <ReceivedInvites invites={invites} />
 
-      <MonthSwitcher monthKey={month.key} path="/" />
-
-      <section className="rounded-3xl bg-card px-5 py-5">
-        <p className="text-xs tracking-wide text-muted uppercase">
-          Saldo previsto · {formatMonthLabel(month.key)}
-        </p>
+      <MonthSwitcher monthKey={month.key} path="/">
+        <p className="text-xs tracking-wide text-muted uppercase">Saldo previsto</p>
         <p className="mt-2 text-4xl font-semibold tracking-tight">
           {formatBRL(totals.predicted)}
         </p>
@@ -84,7 +80,7 @@ export default async function HomePage({
             <p className="mt-1 text-lg font-semibold">{formatBRL(totals.paid)}</p>
           </div>
         </div>
-      </section>
+      </MonthSwitcher>
 
       {agenda.overdue.length > 0 ? (
         <section className="flex flex-col gap-3">

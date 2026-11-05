@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { EntryList } from "@/components/entry-list";
 import { MonthSwitcher } from "@/components/month-switcher";
-import { formatMonthLabel, parseMonthKey } from "@/lib/dates";
+import { parseMonthKey } from "@/lib/dates";
 import { requireMembership } from "@/lib/session";
 import { getEntriesUntilMonth, rollForward } from "@/modules/financial-entries/queries";
 
@@ -34,7 +34,7 @@ export default async function ContasPage({
         </section>
       ) : null}
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">{formatMonthLabel(month.key)}</h2>
+        <h2 className="text-lg font-semibold">Lançamentos</h2>
         <EntryList
           entries={snapshot.monthEntries}
           empty={

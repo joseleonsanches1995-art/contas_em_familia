@@ -31,11 +31,11 @@ describe("navegação", () => {
 
   it("troca o mês para trás e para frente na mesma tela", () => {
     render(<MonthSwitcher monthKey="2026-01" path="/contas" />);
-    expect(screen.getByRole("link", { name: "Anterior" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Mês anterior" })).toHaveAttribute(
       "href",
       "/contas?mes=2025-12",
     );
-    expect(screen.getByRole("link", { name: "Próximo" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Próximo mês" })).toHaveAttribute(
       "href",
       "/contas?mes=2026-02",
     );

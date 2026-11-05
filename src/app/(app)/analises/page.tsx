@@ -28,17 +28,18 @@ export default async function AnalisesPage({
         <p className="text-sm text-muted">{membership.household.name}</p>
         <h1 className="text-2xl font-semibold tracking-tight">Análises</h1>
       </header>
-      <MonthSwitcher monthKey={month.key} path="/analises" />
-      <section className="grid grid-cols-2 gap-3">
-        <article className="rounded-2xl bg-card px-4 py-4">
-          <p className="text-xs text-muted">Receitas</p>
-          <p className="mt-1 text-lg font-semibold">{formatBRL(totals.income)}</p>
-        </article>
-        <article className="rounded-2xl bg-card px-4 py-4">
-          <p className="text-xs text-muted">Despesas</p>
-          <p className="mt-1 text-lg font-semibold">{formatBRL(totals.expense)}</p>
-        </article>
-      </section>
+      <MonthSwitcher monthKey={month.key} path="/analises">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-muted">Receitas</p>
+            <p className="mt-1 text-lg font-semibold">{formatBRL(totals.income)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted">Despesas</p>
+            <p className="mt-1 text-lg font-semibold">{formatBRL(totals.expense)}</p>
+          </div>
+        </div>
+      </MonthSwitcher>
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Despesas por categoria</h2>
         {rows.length === 0 ? (

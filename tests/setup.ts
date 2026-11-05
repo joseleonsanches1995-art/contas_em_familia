@@ -14,12 +14,11 @@ vi.mock("next/link", () => ({
   default: ({
     href,
     children,
-    className,
+    ...props
   }: {
     href: string;
     children: React.ReactNode;
-    className?: string;
-  }) => React.createElement("a", { href, className }, children),
+  }) => React.createElement("a", { href, ...props }, children),
 }));
 
 afterEach(() => {
