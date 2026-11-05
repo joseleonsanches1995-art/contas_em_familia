@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum HouseholdRole {
+  owner
+  member
+}
+
+enum InviteStatus {
+  pending
+  accepted
+  declined
+  revoked
+}
+
+enum EntryType {
+  income
+  expense
+}
+
+enum EntryStatus {
+  pending
+  paid
+  canceled
+}
+
+enum Frequency {
+  daily
+  weekly
+  monthly
+  yearly
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash       String   @map("password_hash")
+  activeHouseholdId  String?  @map("active_household_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  activeHousehold    Household?        @relation("UserActiveHousehold", fields: [activeHouseholdId], references: [id], onDelete: SetNull)
+  memberships        HouseholdMember[]
+  householdsCreated  Household[]       @relation("HouseholdCreatedBy")
+  invitesSent        HouseholdInvite[] @relation("InvitesSent")
+  entriesCreated     FinancialEntry[]  @relation("EntryCreatedBy")
+  recurrencesCreated Recurrence[]      @relation("RecurrenceCreatedBy")
+  plansCreated       InstallmentPlan[] @relation("PlanCreatedBy")
+  activityLogs       ActivityLog[]
+
+  @@map("users")
+}
+
+model Household {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  currency    String   @default("BRL") @db.Char(3)
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  creator     User              @relation("HouseholdCreatedBy", fields: [createdById], references: [id])
+  members     HouseholdMember[]
+  categories  Category[]
+  entries     FinancialEntry[]
+  recurrences Recurrence[]
+  plans       InstallmentPlan[]
+  logs        ActivityLog[]
+  invites     HouseholdInvite[]
+  activeFor   User[]            @relation("UserActiveHousehold")
+
+  @@map("households")
+}
+
+model HouseholdInvite {
+  id          String       @id @default(uuid()) @db.Uuid
+  householdId String       @map("household_id") @db.Uuid
+  email       String
+  invitedById String       @map("invited_by") @db.Uuid
+  status      InviteStatus @default(pending)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  respondedAt DateTime?    @map("responded_at")
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation("InvitesSent", fields: [invitedById], references: [id])
+
+  @@index([householdId, status])
+  @@index([email, status])
+  @@map("household_invites")
+}
+
+model HouseholdMember {
+  id          String        @id @default(uuid()) @db.Uuid
+  householdId String        @map("household_id") @db.Uuid
+  userId      String        @map("user_id") @db.Uuid
+  role        HouseholdRole @default(owner)
+  joinedAt    DateTime      @default(now()) @map("joined_at")
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, userId])
+  @@index([userId])
+  @@map("household_members")
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  householdId String   @map("household_id") @db.Uuid
+  name        String
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  household   Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  entries     FinancialEntry[]
+  recurrences Recurrence[]
+  plans       InstallmentPlan[]
+
+  @@unique([householdId, name])
+  @@map("categories")
+}
+
+model FinancialEntry {
+  id                String      @id @default(uuid()) @db.Uuid
+  householdId       String      @map("household_id") @db.Uuid
+  categoryId        String?     @map("category_id") @db.Uuid
+  recurrenceId      String?     @map("recurrence_id") @db.Uuid
+  installmentPlanId String?     @map("installment_plan_id") @db.Uuid
+  type              EntryType
+  description       String
+  amount            Decimal     @db.Decimal(12, 2)
+  dueDate           DateTime    @map("due_date") @db.Date
+  competenceDate    DateTime    @map("competence_date") @db.Date
+  status            EntryStatus @default(pending)
+  paidAt            DateTime?   @map("paid_at")
+  paidOn            DateTime?   @map("paid_on") @db.Date
+  installmentNumber Int?        @map("installment_number")
+  notes             String?     @db.Text
+  createdById       String      @map("created_by") @db.Uuid
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
+
+  household       Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  category        Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  recurrence      Recurrence?      @relation(fields: [recurrenceId], references: [id], onDelete: SetNull)
+  installmentPlan InstallmentPlan? @relation(fields: [installmentPlanId], references: [id], onDelete: SetNull)
+  creator         User             @relation("EntryCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([recurrenceId, competenceDate])
+  @@unique([installmentPlanId, installmentNumber])
+  @@index([householdId, dueDate])
+  @@index([householdId, competenceDate])
+  @@index([householdId, status])
+  @@map("financial_entries")
+}
+
+model Recurrence {
+  id                 String    @id @default(uuid()) @db.Uuid
+  householdId        String    @map("household_id") @db.Uuid
+  categoryId         String?   @map("category_id") @db.Uuid
+  type               EntryType
+  description        String
+  amount             Decimal   @db.Decimal(12, 2)
+  frequency          Frequency
+  interval           Int       @default(1)
+  startDate          DateTime  @map("start_date") @db.Date
+  endDate            DateTime? @map("end_date") @db.Date
+  dueDay             Int?      @map("due_day")
+  nextGenerationDate DateTime  @map("next_generation_date") @db.Date
+  isActive           Boolean   @default(true) @map("is_active")
+  createdById        String    @map("created_by") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  household Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  category  Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  creator   User             @relation("RecurrenceCreatedBy", fields: [createdById], references: [id])
+  entries   FinancialEntry[]
+
+  @@index([householdId, isActive])
+  @@map("recurrences")
+}
+
+model InstallmentPlan {
+  id                String    @id @default(uuid()) @db.Uuid
+  householdId       String    @map("household_id") @db.Uuid
+  categoryId        String?   @map("category_id") @db.Uuid
+  type              EntryType @default(expense)
+  description       String
+  totalAmount       Decimal   @map("total_amount") @db.Decimal(12, 2)
+  installmentAmount Decimal   @map("installment_amount") @db.Decimal(12, 2)
+  installmentsCount Int       @map("installments_count")
+  firstDueDate      DateTime  @map("first_due_date") @db.Date
+  frequency         Frequency @default(monthly)
+  isActive          Boolean   @default(true) @map("is_active")
+  createdById       String    @map("created_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  household Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  category  Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  creator   User             @relation("PlanCreatedBy", fields: [createdById], references: [id])
+  entries   FinancialEntry[]
+
+  @@index([householdId])
+  @@map("installment_plans")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  householdId String   @map("household_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id") @db.Uuid
+  action      String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([householdId, createdAt])
+  @@map("activity_logs")
+}
