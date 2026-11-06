@@ -15,7 +15,7 @@ export function LoginForm() {
       subtitle="Entre com o seu e-mail. Um convite para o espaço de outra pessoa aparece depois do login."
       footer={<Link href="/cadastrar">Criar a primeira conta</Link>}
     >
-      <form action={action} className="flex flex-col gap-4">
+      <form action={action} className="flex flex-col gap-4" >
         <TextField label="E-mail" name="email" type="email" autoComplete="email" />
         <TextField label="Senha" name="password" type="password" autoComplete="current-password" />
         {state.error ? <Alert>{state.error}</Alert> : null}
